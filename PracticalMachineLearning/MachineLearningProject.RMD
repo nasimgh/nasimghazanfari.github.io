@@ -1,0 +1,65 @@
+---
+title: "Practical Machine Learning Project"
+author: "Nasim"
+date: "Wednesday, November 19, 2014"
+output: html_document
+---
+#Coursera Practical Machine Learning: Course Project
+##Summary
+The purposes of this exercise is to predict which of five types of exercise was performed from a dataset tracking six healthy volunteers performing the Unilateral Dumbbell Biceps Curl. More information about the exercise and the dataset is available at http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises.
+
+##Instruction
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases. 
+
+1. Your submission should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-).
+2. You should also apply your machine learning algorithm to the 20 test cases available in the test data above. Please submit your predictions in appropriate format to the programming assignment for automated grading. See the programming assignment for additional details. 
+
+##The process
+Required libraries
+```{r}
+library(caret)
+library(randomForest)
+```
+Loading train and test data 
+```{r}
+traindataread <- read.csv(file = "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", na.strings=c("", "NA", "NULL"))
+testdataread <- read.csv(file = "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", na.strings=c("", "NA", "NULL"))
+```
+In exploring the data, we discover a substantial number of NA values and some !DIV/0 data values. We remove these variables from the dataset manually in order to allow the use of random forests.
+
+We subset our training data and remove any incomplete cases as well as the volunteer names.
+
+```{r}
+traindataread_subset <- data.frame(traindataread[,8:11], traindataread[,37:49], traindataread[,60:68], traindataread[,84:86], total_accel_dumbbell=traindataread[,102], traindataread[,113:124], traindataread[,151:160])
+inTrain <- createDataPartition(y=traindataread_subset$classe, p=0.7, list=FALSE)
+traindata <- traindataread_subset[inTrain,]
+traindata <- na.omit(traindata)
+testdata <- data.frame(testdataread[,8:11], testdataread[,37:49], testdataread[,60:68], testdataread[,84:86], total_accel_dumbbell=testdataread[,102], testdataread[,113:124], testdataread[,151:160])
+```
+Let’s run the model now and test our results.
+```{r}
+modelFit <- randomForest(classe ~., data=traindata, do.trace=10)
+modelFit
+```
+Now predicting the data.
+```{r}
+prediction <- predict(modelFit, testdata)
+prediction
+```
+
+##Submission
+This function will help us output the answers:
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+```
+Output the answers:
+```{r}
+answers = prediction
+pml_write_files(answers)
+```
